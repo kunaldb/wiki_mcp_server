@@ -19,3 +19,4 @@ confluence_cred.py
 # Keep only template files
 !app.yaml.template
 !.env.template
+notebook.ipynb
