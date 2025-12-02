@@ -1,0 +1,21 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+.databricks
+
+# Sensitive files with secrets - DO NOT COMMIT
+app.yaml
+confluence_cred.py
+.env
+
+# Keep only template files
+!app.yaml.template
+!.env.template
