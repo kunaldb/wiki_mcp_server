@@ -1,0 +1,16 @@
+command:
+- "python" 
+- "main.py"
+
+env:
+- name: "DATABRICKS_APP_PORT"
+  value: "8000"
+- name: "CONFLUENCE_URL"
+  value: "https://your-company.atlassian.net"
+- name: "CONFLUENCE_EMAIL"
+  value: "your.email@company.com"
+- name: "CONFLUENCE_API_TOKEN"
+  value: "YOUR_CONFLUENCE_API_TOKEN_HERE"
+
+runtime: python_3.11
+
