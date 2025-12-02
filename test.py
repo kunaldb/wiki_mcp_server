@@ -1,21 +1,96 @@
 """
 Test script for the Wiki MCP Server deployed on Databricks Apps
 
-This script demonstrates how to connect to and test your deployed MCP server.
+This script auto-detects your deployed app URL and tests the MCP server.
+
+Usage:
+  python test.py                           # Auto-detect app name from deployment.sh
+  python test.py --app-name my-custom-app  # Use specific app name
 """
 
+import os
+import sys
+import json
+import subprocess
+import re
 from databricks_mcp import DatabricksMCPClient
 from databricks.sdk import WorkspaceClient
 
-# Replace with your deployed app URL
-# Example: https://custom-mcp-server-6051921418418893.staging.aws.databricksapps.com/mcp
-mcp_server_url = "https://mcp-wiki-test-kunal-1444828305810485.aws.databricksapps.com/mcp/"
 
-# Set your Databricks CLI profile (usually "DEFAULT")
-databricks_cli_profile = "DEFAULT"
+def get_app_name_from_deployment_sh():
+    """Read APP_NAME from deployment.sh"""
+    try:
+        with open("deployment.sh", "r") as f:
+            content = f.read()
+            # Look for APP_NAME="${APP_NAME:-mcp-wiki-server}"
+            match = re.search(r'APP_NAME="\$\{APP_NAME:-([^}]+)\}"', content)
+            if match:
+                return match.group(1)
+    except FileNotFoundError:
+        pass
+    return None
 
-# Initialize the Databricks workspace client
-workspace_client = WorkspaceClient(profile=databricks_cli_profile)
+
+def get_app_url_from_cli(app_name):
+    """Get app URL from Databricks CLI"""
+    try:
+        result = subprocess.run(
+            ["databricks", "apps", "get", app_name, "--output", "json"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        app_info = json.loads(result.stdout)
+        return app_info.get("url")
+    except Exception as e:
+        print(f"❌ Error getting app URL: {e}")
+        return None
+
+
+# Get app name
+app_name = None
+if len(sys.argv) > 1 and sys.argv[1] == "--app-name" and len(sys.argv) > 2:
+    app_name = sys.argv[2]
+    print(f"📱 Using app name from command line: {app_name}")
+elif os.getenv("APP_NAME"):
+    app_name = os.getenv("APP_NAME")
+    print(f"📱 Using app name from environment: {app_name}")
+else:
+    app_name = get_app_name_from_deployment_sh()
+    if app_name:
+        print(f"📱 Auto-detected app name from deployment.sh: {app_name}")
+
+if not app_name:
+    print("❌ Could not detect app name!")
+    print("\nPlease either:")
+    print("  1. Run: python test.py --app-name your-app-name")
+    print("  2. Or set: export APP_NAME=your-app-name")
+    sys.exit(1)
+
+# Get app URL from Databricks
+print(f"🔍 Getting URL for app '{app_name}' from Databricks...")
+base_url = get_app_url_from_cli(app_name)
+
+if not base_url:
+    print(f"❌ Could not find app '{app_name}'")
+    print("\nMake sure:")
+    print("  1. The app is deployed: ./deployment.sh")
+    print("  2. You're authenticated: databricks auth login")
+    print("  3. The app name is correct")
+    sys.exit(1)
+
+# Construct MCP endpoint URL
+mcp_server_url = f"{base_url.rstrip('/')}/mcp"
+print(f"✓ Found app URL: {mcp_server_url}")
+
+# Initialize Databricks workspace client
+databricks_cli_profile = os.getenv("DATABRICKS_PROFILE", "DEFAULT")
+
+try:
+    workspace_client = WorkspaceClient(profile=databricks_cli_profile)
+except Exception as e:
+    print(f"❌ Error connecting to Databricks: {e}")
+    sys.exit(1)
 
 # Create the MCP client
 mcp_client = DatabricksMCPClient(
@@ -23,8 +98,11 @@ mcp_client = DatabricksMCPClient(
     workspace_client=workspace_client
 )
 
-print("=" * 60)
+print("\n" + "=" * 60)
 print("Testing Wiki MCP Server")
+print("=" * 60)
+print(f"App Name: {app_name}")
+print(f"MCP URL:  {mcp_server_url}")
 print("=" * 60)
 
 try:

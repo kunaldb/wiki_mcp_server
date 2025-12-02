@@ -122,18 +122,23 @@ The script will:
 
 ### 5. Test the Deployment
 
-Update `test.py` with your deployed app URL (you'll get this after deployment):
-
-```python
-mcp_server_url = "https://your-app-name-xxxxx.aws.databricksapps.com/mcp"
-```
-
-Install test dependencies and run:
+The test script automatically detects your app name and URL:
 
 ```bash
+# Install test dependencies (first time only)
 uv pip install databricks-mcp databricks-sdk
-uv run test.py
+
+# Run tests (auto-detects app name from deployment.sh)
+python test.py
+
+# Or specify a custom app name
+python test.py --app-name my-custom-app
 ```
+
+The test will:
+- Auto-detect the app name from `deployment.sh`
+- Query Databricks CLI to get the app URL
+- Test all 3 MCP tools (list spaces, search, get content)
 
 ## Available MCP Tools
 
@@ -221,6 +226,22 @@ databricks apps logs mcp-wiki-server
 
 # Delete the app
 databricks apps delete mcp-wiki-server
+```
+
+### Testing Commands
+
+```bash
+# Run tests (auto-detects app from deployment.sh)
+python test.py
+
+# Test specific app
+python test.py --app-name my-custom-app
+
+# One-liner: Deploy and test
+./deployment.sh && python test.py
+
+# Get just the app URL
+databricks apps get mcp-wiki-server --output json | jq -r '.url'
 ```
 
 ### Workspace Path Examples
