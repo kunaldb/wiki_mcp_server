@@ -15,8 +15,12 @@ wheels/
 app.yaml
 confluence_cred.py
 .env
+.env.deployment
+deployment-config.sh
 
-# Keep only template files
+# Keep only template/example files
 !app.yaml.template
 !.env.template
+!.env.deployment.template
+!deployment-config.example.sh
 notebook.ipynb

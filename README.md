@@ -38,9 +38,74 @@ Update `app.yaml` with your actual credentials:
 - **CONFLUENCE_EMAIL**: Your Confluence/Jira email address
 - **CONFLUENCE_API_TOKEN**: Generate at https://id.atlassian.com/manage-profile/security/api-tokens
 
-### 3. Deploy to Databricks Apps
+### 3. Configure Deployment Settings (Optional)
 
-Run the deployment script:
+The deployment script uses sensible defaults but can be customized with environment variables:
+
+#### Default Behavior
+By default, the script will:
+- Auto-detect your Databricks username
+- Sync files to: `/Workspace/Users/<your-username>/mcp_servers/wiki_mcp_server`
+- Deploy with app name: `mcp-wiki-server`
+
+#### Customize App Name
+```bash
+export APP_NAME="my-custom-wiki-mcp-server"
+```
+
+#### Customize Workspace Path
+To change where files are synced in your Databricks workspace:
+
+```bash
+# Option 1: Set the full workspace path
+export WORKSPACE_PATH="/Workspace/Users/your.email@company.com/custom_folder/wiki_mcp"
+
+# Option 2: Set just the base path (will append username and default subfolder)
+export WORKSPACE_BASE_PATH="/Workspace/Shared/mcp_servers"
+```
+
+**Examples:**
+
+```bash
+# Sync to a specific personal folder
+export WORKSPACE_PATH="/Workspace/Users/kunal.gaurav@databricks.com/Generative_AI/mcp/Wiki_mcp_server"
+./deployment.sh
+
+# Sync to a shared team folder
+export WORKSPACE_PATH="/Workspace/Shared/team_projects/wiki_mcp"
+./deployment.sh
+
+# Use a custom app name
+export APP_NAME="prod-wiki-mcp-server"
+./deployment.sh
+```
+
+#### Use a Configuration File (Recommended)
+Create a persistent configuration file:
+
+```bash
+# Copy the example config
+cp deployment-config.example.sh deployment-config.sh
+
+# Edit with your settings
+nano deployment-config.sh
+
+# Source and deploy
+source deployment-config.sh && ./deployment.sh
+```
+
+#### Edit deployment.sh Directly
+You can also edit `deployment.sh` and change the default values at the top:
+
+```bash
+# Edit these lines in deployment.sh
+APP_NAME="${APP_NAME:-mcp-wiki-server}"
+WORKSPACE_BASE_PATH="${WORKSPACE_BASE_PATH:-/Workspace/Users}"
+```
+
+### 4. Deploy to Databricks Apps
+
+Make the script executable and run it:
 
 ```bash
 chmod +x deployment.sh
@@ -48,11 +113,14 @@ chmod +x deployment.sh
 ```
 
 The script will:
-- Sync your code to Databricks workspace
-- Create the Databricks App
-- Deploy with your Confluence credentials
+1. Auto-detect your Databricks username
+2. Show you the configuration (app name, workspace path)
+3. Ask for confirmation
+4. Sync your code to the Databricks workspace
+5. Create the Databricks App (if it doesn't exist)
+6. Deploy with your Confluence credentials
 
-### 4. Test the Deployment
+### 5. Test the Deployment
 
 Update `test.py` with your deployed app URL (you'll get this after deployment):
 
@@ -115,6 +183,60 @@ result = mcp_client.call_tool(
     "list_confluence_spaces",
     {"limit": 10}
 )
+```
+
+## Deployment Quick Reference
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `APP_NAME` | Name of your Databricks App | `mcp-wiki-server` |
+| `WORKSPACE_PATH` | Full path in Databricks workspace | `/Workspace/Users/<username>/mcp_servers/wiki_mcp_server` |
+| `WORKSPACE_BASE_PATH` | Base workspace path (auto-appends user/folder) | `/Workspace/Users` |
+
+### Common Deployment Commands
+
+```bash
+# Standard deployment (uses defaults)
+./deployment.sh
+
+# Deploy with custom app name
+APP_NAME="my-wiki-mcp" ./deployment.sh
+
+# Deploy to specific workspace path
+WORKSPACE_PATH="/Workspace/Users/you@company.com/my_apps/wiki_mcp" ./deployment.sh
+
+# Deploy to shared folder
+WORKSPACE_PATH="/Workspace/Shared/team_mcps/wiki_server" ./deployment.sh
+
+# Check app status
+databricks apps get mcp-wiki-server
+
+# View app logs
+databricks apps logs mcp-wiki-server
+
+# Redeploy after changes
+./deployment.sh
+
+# Delete the app
+databricks apps delete mcp-wiki-server
+```
+
+### Workspace Path Examples
+
+**Personal workspace:**
+```bash
+/Workspace/Users/kunal.gaurav@databricks.com/mcp_servers/wiki_mcp_server
+/Workspace/Users/kunal.gaurav@databricks.com/Generative_AI/mcp/Wiki_mcp_server
+/Workspace/Users/kunal.gaurav@databricks.com/projects/confluence_mcp
+```
+
+**Shared workspace:**
+```bash
+/Workspace/Shared/mcp_servers/wiki
+/Workspace/Shared/team_apps/confluence_integration
+/Workspace/Shared/ai_tools/wiki_mcp
 ```
 
 ## Development
